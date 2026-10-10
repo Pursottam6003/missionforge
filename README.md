@@ -6,6 +6,8 @@ MissionForge is an autonomous multi-agent engineering workbench built natively o
 
 ---
 
+![Architecture](./docs/missonForgeArch.svg)
+
 ## Key Features
 
 - **Multi-Agent Coordination**: Autonomous handoffs between **Manager** (Planner), **Researcher** (Evidence Collector), **Analyst** (Trade-Off Evaluator), and **Reporter** (Synthesis).

@@ -2,6 +2,8 @@
 
 MissionForge is a Cloudflare-native autonomous AI engineering workbench designed to turn ambiguous systems engineering objectives into evidence-backed architectural recommendations.
 
+![Architecture](./missonForgeArch.svg)
+
 ## System Architecture Diagram
 
 ```mermaid

@@ -4,9 +4,9 @@
 
 MissionForge is an autonomous multi-agent engineering workbench built natively on Cloudflare. It decomposes complex technical missions, collects evidence via technical research tools, contrasts systems trade-offs, and produces structured executive decision reports.
 
----
+![Architecture](./docs/missonForgearch.png)
 
-![Architecture](./docs/missonForgeArch.svg)
+---
 
 ## Key Features
 

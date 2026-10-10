@@ -1,6 +1,19 @@
 import React, { useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Send, User, Sparkles, CheckCircle2, Clock, Menu, Layers } from 'lucide-react';
+import {
+  Send,
+  User,
+  Sparkles,
+  CheckCircle2,
+  Clock,
+  Menu,
+  Layers,
+  ArrowRight,
+  Cpu,
+  Database,
+  Radio,
+  Workflow
+} from 'lucide-react';
 import type { Message, AgentRole } from '../../../src/types/mission';
 
 interface MissionWorkspaceProps {
@@ -9,8 +22,10 @@ interface MissionWorkspaceProps {
   messages: Message[];
   inputVal: string;
   isMissionActive: boolean;
+  presets: string[];
   onInputChange: (val: string) => void;
   onSubmit: (e: React.FormEvent) => void;
+  onLaunchPreset: (preset: string) => void;
   onOpenSidebar: () => void;
   onOpenRightPanel: () => void;
 }
@@ -21,8 +36,10 @@ export const MissionWorkspace: React.FC<MissionWorkspaceProps> = ({
   messages,
   inputVal,
   isMissionActive,
+  presets,
   onInputChange,
   onSubmit,
+  onLaunchPreset,
   onOpenSidebar,
   onOpenRightPanel,
 }) => {
@@ -60,13 +77,12 @@ export const MissionWorkspace: React.FC<MissionWorkspaceProps> = ({
 
   return (
     <main className="flex-1 flex flex-col h-full bg-[#FAF7F2] overflow-hidden select-text relative w-full min-w-0">
-      {/* Background Soft Glows */}
+      {/* Background Ambient Glows */}
       <div className="absolute top-0 right-1/4 w-72 md:w-96 h-72 md:h-96 bg-rose-200/25 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 left-10 w-72 md:w-96 h-72 md:h-96 bg-amber-100/30 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header */}
       <header className="px-3 md:px-6 py-3 border-b border-rose-100/70 bg-white/70 backdrop-blur-md flex items-center justify-between shrink-0 z-10 gap-2">
-        {/* Mobile Left Drawer Trigger */}
         <button
           onClick={onOpenSidebar}
           aria-label="Open Missions Menu"
@@ -95,12 +111,11 @@ export const MissionWorkspace: React.FC<MissionWorkspaceProps> = ({
               ) : status === 'idle' ? null : (
                 <Clock className="w-3 h-3 text-amber-600 animate-pulse" />
               )}
-              <span>{status || 'connecting'}</span>
+              <span>{status || 'ready'}</span>
             </span>
           </div>
         </div>
 
-        {/* Mobile Right Drawer Trigger (Tasks & Report) */}
         <button
           onClick={onOpenRightPanel}
           aria-label="Open Tasks and Reports"
@@ -111,17 +126,130 @@ export const MissionWorkspace: React.FC<MissionWorkspaceProps> = ({
         </button>
       </header>
 
-      {/* Execution Stream */}
-      <div className="flex-1 overflow-y-auto px-3 md:px-8 py-4 md:py-6 space-y-4 md:space-y-6 z-10">
+      {/* Main Workspace Stream or Interactive Landing Architecture */}
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 py-5 md:py-7 space-y-4 md:space-y-6 z-10">
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center max-w-sm mx-auto text-slate-400 px-4">
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl md:rounded-3xl bg-gradient-to-tr from-rose-100 to-amber-100 border border-rose-200 flex items-center justify-center text-rose-500 mb-3 shadow-xs">
-              <Sparkles className="w-6 h-6 md:w-7 md:h-7" />
+          <div className="max-w-2xl mx-auto py-2">
+            {/* ── 1. Hero Tagline ──────────────────────────────────── */}
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold mb-3">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Cloudflare-Native Autonomous Workbench</span>
+              </div>
+              <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight mb-2">
+                MissionForge System Architecture
+              </h1>
+              <p className="text-xs md:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
+                Autonomous multi-agent orchestration running at Cloudflare’s global edge. Transforms ambiguous technical questions into evidence-backed architectural decisions.
+              </p>
             </div>
-            <h3 className="text-sm font-bold text-slate-800">No active mission</h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              Launch an example from the sidebar or type an engineering query below to start autonomous execution.
-            </p>
+
+            {/* ── 2. Visual Architecture Diagram ──────────────────── */}
+            <div className="bg-white/90 backdrop-blur rounded-2xl border border-rose-100/90 p-4 md:p-5 shadow-sm mb-6 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-rose-100/60">
+                <div className="flex items-center gap-2">
+                  <Workflow className="w-4 h-4 text-rose-500" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Edge Runtime Blueprint
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono bg-stone-100 text-slate-600 px-2 py-0.5 rounded border border-stone-200">
+                  Workers AI + DO SQLite
+                </span>
+              </div>
+
+              {/* Layer 1: Client & Ingestion */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
+                <div className="p-3 rounded-xl bg-stone-50/80 border border-stone-200/70 flex items-start gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-sky-50 text-sky-600 border border-sky-200 mt-0.5">
+                    <Radio className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-800">Real-Time WebSockets</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      Hibernating bidirectional channels via <code>@cloudflare/agents</code>.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-stone-50/80 border border-stone-200/70 flex items-start gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 mt-0.5">
+                    <Database className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-800">Durable Object SQLite</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      Sub-millisecond embedded SQLite state persisted per mission instance.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Layer 2: 4-Stage Multi-Agent Pipeline */}
+              <div className="p-3 rounded-xl bg-gradient-to-r from-rose-50/40 via-amber-50/30 to-purple-50/40 border border-rose-100/80">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2.5">
+                  Autonomous Execution Pipeline
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="p-2 rounded-lg bg-white border border-stone-200 shadow-2xs text-center">
+                    <div className="text-base mb-0.5">🧠</div>
+                    <div className="font-bold text-[11px] text-slate-800">Manager</div>
+                    <div className="text-[9px] text-slate-500">Task Decomposition</div>
+                  </div>
+                  <div className="p-2 rounded-lg bg-white border border-rose-200 shadow-2xs text-center">
+                    <div className="text-base mb-0.5">🔎</div>
+                    <div className="font-bold text-[11px] text-rose-700">Researcher</div>
+                    <div className="text-[9px] text-slate-500">Corpus Tool Search</div>
+                  </div>
+                  <div className="p-2 rounded-lg bg-white border border-amber-200 shadow-2xs text-center">
+                    <div className="text-base mb-0.5">📊</div>
+                    <div className="font-bold text-[11px] text-amber-700">Analyst</div>
+                    <div className="text-[9px] text-slate-500">Trade-Off Evaluation</div>
+                  </div>
+                  <div className="p-2 rounded-lg bg-white border border-purple-200 shadow-2xs text-center">
+                    <div className="text-base mb-0.5">📝</div>
+                    <div className="font-bold text-[11px] text-purple-700">Reporter</div>
+                    <div className="text-[9px] text-slate-500">Decision Matrix</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Layer 3: Inference Specification */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-xs">
+                <div className="flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-rose-500" />
+                  <span className="font-semibold text-slate-800">Workers AI Model:</span>
+                  <code className="text-[11px] bg-white px-2 py-0.5 rounded border border-stone-200 text-rose-600 font-mono">
+                    @cf/meta/llama-3.3-70b-instruct-fp8-fast
+                  </code>
+                </div>
+                <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Global Edge GPUs
+                </span>
+              </div>
+            </div>
+
+            {/* ── 3. 1-Click Launch Presets ────────────────────────── */}
+            <div className="bg-white/90 backdrop-blur border border-rose-100/90 rounded-2xl p-4 md:p-5 shadow-sm text-left">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600">
+                  Select a Mission to Execute
+                </span>
+                <span className="text-[10px] text-slate-400">Click any preset to trigger the pipeline</span>
+              </div>
+              <div className="space-y-2">
+                {presets.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => onLaunchPreset(preset)}
+                    className="w-full flex items-center justify-between gap-3 p-3 rounded-xl bg-stone-50/80 hover:bg-rose-50/70 border border-stone-200/60 hover:border-rose-200 text-xs text-slate-700 hover:text-slate-900 font-medium transition-all group shadow-2xs"
+                  >
+                    <span className="truncate">{preset}</span>
+                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-rose-500 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           messages.map((msg, i) => {
@@ -163,7 +291,7 @@ export const MissionWorkspace: React.FC<MissionWorkspaceProps> = ({
         <div ref={bottomRef} />
       </div>
 
-      {/* Responsive Input Console */}
+      {/* Bottom Command Console */}
       <form onSubmit={onSubmit} className="p-2.5 md:p-4 border-t border-rose-100/70 bg-white/80 backdrop-blur-md shrink-0 z-10">
         <div className="relative flex items-center max-w-4xl mx-auto w-full">
           <input
@@ -172,8 +300,8 @@ export const MissionWorkspace: React.FC<MissionWorkspaceProps> = ({
             onChange={(e) => onInputChange(e.target.value)}
             placeholder={
               isMissionActive
-                ? 'Ask a follow-up question...'
-                : 'Enter engineering mission objective...'
+                ? 'Ask a follow-up question regarding findings or trade-offs...'
+                : 'Enter engineering mission objective (or pick a preset above)...'
             }
             className="w-full bg-white border border-rose-200/90 focus:border-rose-400 focus:ring-2 focus:ring-rose-100 rounded-xl md:rounded-2xl px-3.5 md:px-5 py-2.5 md:py-3.5 pr-20 md:pr-28 text-xs text-slate-800 placeholder-slate-400 outline-none transition-all shadow-xs"
           />

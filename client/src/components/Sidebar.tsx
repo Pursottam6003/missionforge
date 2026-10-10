@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Terminal, Clock, CheckCircle2, AlertCircle, Sparkles, X } from 'lucide-react';
+import { Plus, Terminal, Clock, CheckCircle2, AlertCircle, Sparkles, X, GitBranch, LogOut, User } from 'lucide-react';
 
 export interface SavedMissionMeta {
   id: string;
@@ -8,30 +8,40 @@ export interface SavedMissionMeta {
   updatedAt: number;
 }
 
+export interface UserProfile {
+  id: string;
+  login: string;
+  name?: string;
+  avatar_url?: string;
+}
+
 interface SidebarProps {
   currentMissionId: string;
   recentMissions: SavedMissionMeta[];
   presets: string[];
+  user: UserProfile | null;
   isOpen?: boolean;
   onClose?: () => void;
   onSelectMission: (id: string) => void;
   onNewMission: () => void;
   onLaunchPreset: (preset: string) => void;
+  onLogout: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentMissionId,
   recentMissions,
   presets,
+  user,
   isOpen = false,
   onClose,
   onSelectMission,
   onNewMission,
   onLaunchPreset,
+  onLogout,
 }) => {
   return (
     <>
-      {/* Mobile Backdrop */}
       {isOpen && (
         <div
           onClick={onClose}
@@ -67,7 +77,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Plus className="w-3.5 h-3.5" />
               <span>New</span>
             </button>
-            {/* Close Button on Mobile */}
             <button
               onClick={onClose}
               className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-stone-100 lg:hidden"
@@ -150,15 +159,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Footer Session */}
-        <div className="p-3 border-t border-rose-100/60 bg-white/60 text-[11px] text-slate-500 flex items-center justify-between">
-          <span className="font-medium">Instance:</span>
-          <span
-            className="font-mono text-slate-700 truncate max-w-[140px] text-[10px] bg-rose-50 px-2 py-0.5 rounded border border-rose-100"
-            title={currentMissionId}
-          >
-            {currentMissionId}
-          </span>
+        {/* ── AUTHENTICATION DOCK ──────────────────────────────────── */}
+        <div className="p-3 border-t border-rose-100/70 bg-white/80 shrink-0">
+          {user ? (
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt={user.login} className="w-7 h-7 rounded-full border border-rose-200" />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs font-bold">
+                    {user.login[0].toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-800 truncate">{user.name || user.login}</div>
+                  <div className="text-[10px] text-slate-400 truncate">@{user.login}</div>
+                </div>
+              </div>
+              <button
+                onClick={onLogout}
+                title="Sign out"
+                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[11px] text-slate-500">
+                <span className="flex items-center gap-1 font-medium">
+                  <User className="w-3 h-3 text-amber-500" />
+                  <span>Guest Demo Mode</span>
+                </span>
+                <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.2 rounded font-semibold">
+                  Free
+                </span>
+              </div>
+              <a
+                href="/api/auth/github"
+                className="w-full py-1.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-xs"
+              >
+                <GitBranch className="w-3.5 h-3.5" />
+                <span>Sign in with GitHub</span>
+              </a>
+            </div>
+          )}
         </div>
       </aside>
     </>

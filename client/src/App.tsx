@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAgent } from '@cloudflare/agents/react';
 import { X } from 'lucide-react';
-import { Sidebar, type SavedMissionMeta } from './components/Sidebar';
+import { Sidebar, type SavedMissionMeta, type UserProfile } from './components/Sidebar';
 import { MissionWorkspace } from './components/MissionWorkspace';
 import { TaskBoard } from './components/TaskBoard';
 import { TimelineView } from './components/TimelineView';
@@ -15,8 +15,15 @@ const PRESETS = [
 ];
 
 export default function App() {
+  const [user, setUser] = useState<UserProfile | null>(null);
+
+  // 1. Fresh unique ID per visitor to prevent inheriting previously completed 'default-mission'
   const [currentMissionId, setCurrentMissionId] = useState<string>(() => {
-    return localStorage.getItem('mf_active_mission') || 'default-mission';
+    const saved = localStorage.getItem('mf_active_mission');
+    if (saved) return saved;
+    const freshId = `guest-${Math.random().toString(36).substring(2, 9)}`;
+    localStorage.setItem('mf_active_mission', freshId);
+    return freshId;
   });
 
   const [recentMissions, setRecentMissions] = useState<SavedMissionMeta[]>(() => {
@@ -30,10 +37,11 @@ export default function App() {
 
   const [inputVal, setInputVal] = useState('');
   const [activeTab, setActiveTab] = useState<'tasks' | 'timeline' | 'report'>('tasks');
-
-  // Mobile Drawer State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
+
+  // 2. Status tracker to ensure we only switch to Report when a run finishes live
+  const prevStatusRef = useRef<string>('idle');
 
   const [state, setState] = useState<MissionState>({
     status: 'idle',
@@ -45,18 +53,40 @@ export default function App() {
     report: null,
   });
 
+  // Check Session State on Mount
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data: { authenticated: boolean; user?: UserProfile }) => {
+        if (data.authenticated && data.user) {
+          setUser(data.user);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const agent = useAgent<MissionState>({
     agent: 'mission-agent',
     name: currentMissionId,
     onStateUpdate: (newState) => {
       setState(newState);
-      if (newState.report) {
+
+      // Only switch to Report if a pipeline actively transitioned to completed during this session
+      if (
+        newState.status === 'completed' &&
+        prevStatusRef.current !== 'completed' &&
+        prevStatusRef.current !== 'idle'
+      ) {
         setActiveTab('report');
+      }
+
+      if (newState.status) {
+        prevStatusRef.current = newState.status;
       }
 
       if (newState.objective) {
         setRecentMissions((prev) => {
-          const title = newState.title || newState.objective?.slice(0, 45) || '';
+          const title = newState.title || newState.objective?.slice(0, 45) || 'Untitled mission';
           const existing = prev.filter((m) => m.id !== currentMissionId);
           const updated: SavedMissionMeta[] = [
             {
@@ -85,7 +115,8 @@ export default function App() {
   };
 
   const handleNewMission = () => {
-    const nextId = `mission-${Date.now().toString(36)}`;
+    const prefix = user ? `gh-${user.login}` : 'guest';
+    const nextId = `${prefix}-${Date.now().toString(36)}`;
     setCurrentMissionId(nextId);
     setState({
       status: 'idle',
@@ -97,10 +128,17 @@ export default function App() {
       report: null,
     });
     setActiveTab('tasks');
+    prevStatusRef.current = 'idle';
+  };
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setUser(null);
   };
 
   const handleLaunchPreset = (presetText: string) => {
     setActiveTab('tasks');
+    prevStatusRef.current = 'planning';
     agent.send(JSON.stringify({ type: 'START_MISSION', objective: presetText }));
   };
 
@@ -109,6 +147,8 @@ export default function App() {
     if (!inputVal.trim()) return;
 
     if (!state.objective) {
+      setActiveTab('tasks');
+      prevStatusRef.current = 'planning';
       agent.send(JSON.stringify({ type: 'START_MISSION', objective: inputVal }));
     } else {
       agent.send(JSON.stringify({ type: 'CHAT_MESSAGE', content: inputVal }));
@@ -118,33 +158,36 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#FAF7F2] text-slate-800 font-sans relative">
-      {/* ── 1. LEFT SIDEBAR (Desktop Fixed, Mobile Slide-In) ───────── */}
+      {/* ── 1. LEFT SIDEBAR ────────────────────────────────────────── */}
       <Sidebar
         currentMissionId={currentMissionId}
         recentMissions={recentMissions}
         presets={PRESETS}
+        user={user}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         onSelectMission={handleSelectMission}
         onNewMission={handleNewMission}
         onLaunchPreset={handleLaunchPreset}
+        onLogout={handleLogout}
       />
 
       {/* ── 2. CENTER PANEL (Main Responsive Workspace) ───────────── */}
       <MissionWorkspace
         title={state.title || state.objective || ''}
-        status={state.status || 'connecting'}
+        status={state.status || 'idle'}
         messages={state.messages || []}
         inputVal={inputVal}
         isMissionActive={Boolean(state.objective)}
+        presets={PRESETS}
         onInputChange={setInputVal}
         onSubmit={handleSubmit}
+        onLaunchPreset={handleLaunchPreset}
         onOpenSidebar={() => setIsSidebarOpen(true)}
         onOpenRightPanel={() => setIsRightPanelOpen(true)}
       />
 
-      {/* ── 3. RIGHT PANEL (Desktop Column, Mobile Slide-In Sheet) ── */}
-      {/* Mobile Backdrop */}
+      {/* ── 3. RIGHT PANEL (Locked Width Inspector) ───────────────── */}
       {isRightPanelOpen && (
         <div
           onClick={() => setIsRightPanelOpen(false)}
@@ -153,11 +196,10 @@ export default function App() {
       )}
 
       <aside
-        className={`fixed inset-y-0 right-0 z-50 w-84 max-w-[88vw] border-l border-rose-100/70 bg-[#FCFBF9] flex flex-col h-full shrink-0 shadow-2xl lg:shadow-[-2px_0_12px_rgba(244,63,94,0.02)] transition-transform duration-200 ease-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 right-0 z-50 w-[360px] xl:w-[400px] max-w-[88vw] border-l border-rose-100/70 bg-[#FCFBF9] flex flex-col h-full shrink-0 shadow-2xl lg:shadow-[-2px_0_12px_rgba(244,63,94,0.02)] transition-transform duration-200 ease-out lg:static lg:translate-x-0 ${
           isRightPanelOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {/* Tab Toggle & Mobile Close */}
         <div className="p-3 border-b border-rose-100/60 bg-white/70 backdrop-blur flex items-center justify-between gap-1 shrink-0">
           <div className="flex gap-1 flex-1">
             <button
@@ -201,7 +243,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* Tab Content */}
         <div className="flex-1 overflow-y-auto p-3.5">
           {activeTab === 'tasks' ? (
             <TaskBoard tasks={state.tasks || []} />
@@ -212,14 +253,13 @@ export default function App() {
           )}
         </div>
 
-        {/* State Inspector Footer */}
         <div className="p-3 border-t border-rose-100/60 bg-white/80 text-[10px] text-slate-500 font-mono shrink-0">
           <div className="flex justify-between items-center mb-1">
             <span className="uppercase font-bold tracking-wider text-slate-400">DO SQLite State</span>
             <span className="text-rose-600 font-semibold">{state.status}</span>
           </div>
           <div className="truncate text-slate-400">
-            Events: {state.events?.length || 0} | Tasks: {state.tasks?.length || 0}
+            {user ? `@${user.login}` : 'Guest'} | Events: {state.events?.length || 0}
           </div>
         </div>
       </aside>
